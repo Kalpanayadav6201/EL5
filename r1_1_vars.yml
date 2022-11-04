@@ -1,0 +1,26 @@
+run_bootstrap: true
+run_alternate_bootstrap: false
+alter_ip_lines_run: false
+
+ip_1: ""
+ip_2: ""
+ip_3: ""
+ip_4: ""
+ip_5: ""
+base_size1: ""
+base_size2: ""
+
+host_FQDN: ""
+Agency_Name: "" 
+Agency_Id: ""
+Agency_EnableEMAPIOnLDFallback: "" 
+Integration_ManagerUrl: ""
+AgencyOnPremActiveDirectoryConnection_BindDomain: ""
+AgencyOnPremActiveDirectoryConnection_UserSearchBase: ""
+AgencyOnPremActiveDirectoryConnection_BindUser: ""
+AgencyOnPremActiveDirectoryConnection_BindCredential: ""
+Cron_Expression: ""
+ProxyAddress1: ""
+ProxyAddress2: ""
+
+docker_password: tU8RqfqnM0iobyueev=26LsE0lqMYy5r

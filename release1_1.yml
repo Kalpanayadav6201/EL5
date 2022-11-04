@@ -1,0 +1,45 @@
+- hosts: localhost
+  become: yes
+  vars_files:
+    - ./r1_1_vars.yml
+  tasks:
+    - name: test
+      command: ls
+    - name: Run bootstrap.sh
+      shell: ./scripts/bootstrap.sh
+      args:
+        chdir: /opt/EvidenceLibrary
+      when: run_bootstrap
+    - name: Replace IPs in bootstrap-alternatedockersubnet.sh
+      lineinfile:
+        path: /opt/EvidenceLibrary/scripts/bootstrap-alternatedockersubnet.sh
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^EL_LOCALNET_SUBNET=', line: 'EL_LOCALNET_SUBNET=${EL_LOCALNET_SUBNET:- 20.301.0.0/16}'}
+        - { regexp: '^EL_LOCALNET_GATEWAY=', line: 'EL_LOCALNET_GATEWAY=${EL_LOCALNET_GATEWAY:-20.301.0.1}' }
+        - { regexp: '^    "bip": "10.200.0.1/24",', line: '    "bip": "20.300.0.1/24",' }
+        - { regexp: '^    {"base":"10.201.0.0/16","size":24},$', line: '    {"base":"20.301.0.0/16","size":34},'}
+        - { regexp: '^    {"base":"10.202.0.0/16","size":24}$', line: '    {"base":"20.302.0.0/16","size":34}'}
+      when: alter_ip_lines_run
+    - name: Run alternate bootstrap.sh
+      shell: ./scripts/bootstrap-alternatedockersubnet.sh
+      args:
+        chdir: /opt/EvidenceLibrary
+      when: run_alternate_bootstrap or alter_ip_lines_run
+    - name: Create ELOverload.json
+      shell:
+        cmd: printf '{{ host_FQDN }}\n{{ Agency_Name }}\n{{ Agency_Id }}\n{{ Agency_EnableEMAPIOnLDFallback }}\n{{ Integration_ManagerUrl }}\n{{ AgencyOnPremActiveDirectoryConnection_BindDomain }}\n{{ AgencyOnPremActiveDirectoryConnection_UserSearchBase }}\n{{ AgencyOnPremActiveDirectoryConnection_BindUser }}\n {{ AgencyOnPremActiveDirectoryConnection_BindCredential }}\n{{ Cron_Expression }}\n{{ ProxyAddress1 }}\n{{ ProxyAddress2 }}' | ./scripts/Set-ELOverload.ps1 -Prompt
+      become_user: wguser
+      args:
+        chdir: /opt/EvidenceLibrary
+    - name: Run provision.ps1
+      shell: "DOCKER_PASSWORD={{ docker_password }} ./scripts/provision.ps1"
+      args:
+        chdir: /opt/EvidenceLibrary
+      become_user: wguser
+    - name: Make Agency to Certificate mapping Devices
+      shell:  "eval $(grep MSSQL_SA_PASSWORD /opt/EvidenceLibrary/.env) && /opt/mssql-tools/bin/sqlcmd -U sa -P $MSSQL_SA_PASSWORD -d WGSystem -i /opt/EvidenceLibrary/templates/MapAgencyToProdCertificates.sql"
+      args:
+        chdir: /opt/EvidenceLibrary
+    
